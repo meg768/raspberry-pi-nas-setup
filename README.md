@@ -1,0 +1,128 @@
+# Raspberry Pi NAS + Time Machine Setup
+
+This guide sets up a Raspberry Pi named `pi-nas` as a NAS server with:
+- A Time Machine-compatible backup share
+- A general-purpose file share
+- Two users: `timemachine` for backups and `magnus` for full access
+
+## 📦 Requirements
+- Raspberry Pi running Raspberry Pi OS (headless is fine)
+- External hard drive mounted at `/mnt/samsung`
+- macOS device for testing
+
+---
+
+## 🧰 Step 1: Install Samba and Avahi
+```bash
+sudo apt update
+sudo apt install samba samba-common-bin avahi-daemon -y
+sudo systemctl enable avahi-daemon
+sudo systemctl start avahi-daemon
+```
+
+---
+
+## 👤 Step 2: Create Users
+```bash
+sudo adduser timemachine
+sudo smbpasswd -a timemachine
+
+sudo adduser magnus
+sudo smbpasswd -a magnus
+```
+
+---
+
+## 🗂️ Step 3: Create Shared Folders
+```bash
+sudo mkdir -p /mnt/samsung/timemachine
+sudo mkdir -p /mnt/samsung/shared
+
+sudo chown -R timemachine:timemachine /mnt/samsung/timemachine
+sudo chown -R magnus:magnus /mnt/samsung/shared
+
+sudo usermod -aG timemachine magnus
+sudo chown -R timemachine:magnus /mnt/samsung/timemachine
+sudo chmod -R 770 /mnt/samsung/timemachine
+```
+
+---
+
+## ⚙️ Step 4: Configure Samba
+Edit Samba config:
+```bash
+sudo nano /etc/samba/smb.conf
+```
+Append this to the end:
+```ini
+[timemachine]
+   path = /mnt/samsung/timemachine
+   valid users = timemachine magnus
+   writeable = yes
+   browsable = yes
+   guest ok = no
+   force group = magnus
+   create mask = 0660
+   directory mask = 0770
+   vfs objects = catia fruit streams_xattr
+   fruit:resource = xattr
+   fruit:metadata = stream
+   fruit:locking = none
+   fruit:time machine = yes
+   fruit:time machine max size = 500G
+
+[shared]
+   path = /mnt/samsung/shared
+   valid users = magnus
+   writeable = yes
+   browsable = yes
+   guest ok = no
+   create mask = 0664
+   directory mask = 0775
+```
+Save and close.
+
+---
+
+## 🔁 Step 5: Restart Samba
+```bash
+sudo systemctl restart smbd
+```
+
+---
+
+## 🖥️ Step 6: Connect from macOS
+- Open Finder → Go → Connect to Server
+- Enter: `smb://pi-nas.local/shared` or `smb://pi-nas.local/timemachine`
+- Login as `magnus` or `timemachine` respectively
+
+To enable Time Machine:
+- Go to **System Settings > Time Machine > Add Disk**
+- Select `timemachine` share and enter credentials
+
+---
+
+## ✅ Result
+- `timemachine`: backup user
+- `magnus`: full access to everything
+- Pi is discoverable via Bonjour (Avahi)
+
+---
+
+## 📝 Optional Next Steps
+- Auto-mount shares on macOS
+- Encrypt backups
+- Add read-only media share
+
+---
+
+## 📂 Folder Structure
+```
+/mnt/samsung
+├── timemachine
+└── shared
+```
+
+---
+
+Happy hacking! 🐧🎾
