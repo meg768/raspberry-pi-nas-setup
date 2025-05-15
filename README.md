@@ -5,7 +5,7 @@
 This guide sets up a Raspberry Pi named `pi-nas` as a NAS server with:
 - A Time Machine-compatible backup share
 - A general-purpose file share
-- Two users: `timemachine` for backups and `magnus` for full access
+- One user: `magnus`, with full access to all shares and backup capability
 
 ## 📦 Requirements
 - Raspberry Pi running Raspberry Pi OS (headless is fine)
@@ -24,11 +24,8 @@ sudo systemctl start avahi-daemon
 
 ---
 
-## 👤 Step 2: Create Users
+## 👤 Step 2: Create User
 ```bash
-sudo adduser timemachine
-sudo smbpasswd -a timemachine
-
 sudo adduser magnus
 sudo smbpasswd -a magnus
 ```
@@ -40,12 +37,10 @@ sudo smbpasswd -a magnus
 sudo mkdir -p /mnt/samsung/timemachine
 sudo mkdir -p /mnt/samsung/shared
 
-sudo chown -R timemachine:timemachine /mnt/samsung/timemachine
+sudo chown -R magnus:magnus /mnt/samsung/timemachine
 sudo chown -R magnus:magnus /mnt/samsung/shared
-
-sudo usermod -aG timemachine magnus
-sudo chown -R timemachine:magnus /mnt/samsung/timemachine
 sudo chmod -R 770 /mnt/samsung/timemachine
+sudo chmod -R 775 /mnt/samsung/shared
 ```
 
 ---
@@ -59,11 +54,10 @@ Append this to the end:
 ```ini
 [timemachine]
    path = /mnt/samsung/timemachine
-   valid users = timemachine magnus
+   valid users = magnus
    writeable = yes
    browsable = yes
    guest ok = no
-   force group = magnus
    create mask = 0660
    directory mask = 0770
    vfs objects = catia fruit streams_xattr
@@ -96,17 +90,16 @@ sudo systemctl restart smbd
 ## 🖥️ Step 6: Connect from macOS
 - Open Finder → Go → Connect to Server
 - Enter: `smb://pi-nas.local/shared` or `smb://pi-nas.local/timemachine`
-- Login as `magnus` or `timemachine` respectively
+- Login as `magnus`
 
 To enable Time Machine:
 - Go to **System Settings > Time Machine > Add Disk**
-- Select `timemachine` share and enter credentials
+- Select `timemachine` share and enter the `magnus` credentials
 
 ---
 
 ## ✅ Result
-- `timemachine`: backup user
-- `magnus`: full access to everything
+- `magnus`: full access to Time Machine backups and general file sharing
 - Pi is discoverable via Bonjour (Avahi)
 
 ---
