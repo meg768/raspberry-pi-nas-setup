@@ -5,7 +5,6 @@
 This guide sets up a Raspberry Pi named `pi-nas` as a NAS server with:
 - A Time Machine-compatible backup share
 - A general-purpose file share
-- One user: `magnus`, with full access to all shares and backup capability
 
 ## 📦 Requirements
 - Raspberry Pi running Raspberry Pi OS (headless is fine)
@@ -24,82 +23,80 @@ sudo systemctl start avahi-daemon
 
 ---
 
-## 👤 Step 2: Create User
-```bash
-sudo adduser magnus
-sudo smbpasswd -a magnus
-```
 
----
-
-## 🗂️ Step 3: Create Shared Folders
+## 🗂️ Step 2: Create Shared Folders
 ```bash
 sudo mkdir -p /mnt/samsung/timemachine
 sudo mkdir -p /mnt/samsung/shared
 
-sudo chown -R magnus:magnus /mnt/samsung/timemachine
-sudo chown -R magnus:magnus /mnt/samsung/shared
-sudo chmod -R 770 /mnt/samsung/timemachine
-sudo chmod -R 775 /mnt/samsung/shared
+sudo chown -R pi:pi /mnt/samsung/timemachine
+sudo chown -R pi:pi /mnt/samsung/shared
+sudo chmod -R 777 /mnt/samsung/timemachine
+sudo chmod -R 777 /mnt/samsung/shared
 ```
 
 ---
 
-## ⚙️ Step 4: Configure Samba
+## ⚙️ Step 3: Configure Samba
 Edit Samba config:
 ```bash
 sudo nano /etc/samba/smb.conf
 ```
 Append this to the end:
 ```ini
-[timemachine]
-   path = /mnt/samsung/timemachine
-   valid users = magnus
-   writeable = yes
-   browsable = yes
-   guest ok = no
-   create mask = 0660
-   directory mask = 0770
-   vfs objects = catia fruit streams_xattr
-   fruit:resource = xattr
-   fruit:metadata = stream
-   fruit:locking = none
-   fruit:time machine = yes
-   fruit:time machine max size = 500G
+[samsung]
+   path = /mnt/samsung
+   browseable = yes
+   writable = yes
+   guest ok = yes
+   create mask = 0777
+   directory mask = 0777
+   public = yes
 
 [shared]
    path = /mnt/samsung/shared
-   valid users = magnus
-   writeable = yes
-   browsable = yes
-   guest ok = no
-   create mask = 0664
-   directory mask = 0775
+   browseable = yes
+   writable = yes
+   guest ok = yes
+   create mask = 0777
+   directory mask = 0777
+   public = yes
+
+[timemachine]
+   path = /mnt/samsung/timemachine
+   browseable = yes
+   writable = yes
+   guest ok = yes
+   create mask = 0777
+   directory mask = 0777
+   public = yes
+   vfs objects = fruit
+   fruit:time machine = yes
+
 ```
 Save and close.
 
 ---
 
-## 🔁 Step 5: Restart Samba
+## 🔁 Step 4: Restart Samba
 ```bash
 sudo systemctl restart smbd
 ```
 
 ---
 
-## 🖥️ Step 6: Connect from macOS
+## 🖥️ Step 5: Connect from macOS
 - Open Finder → Go → Connect to Server
 - Enter: `smb://pi-nas.local/shared` or `smb://pi-nas.local/timemachine`
-- Login as `magnus`
+- Login as guest
 
 To enable Time Machine:
 - Go to **System Settings > Time Machine > Add Disk**
-- Select `timemachine` share and enter the `magnus` credentials
+- Select `timemachine` share and login as guest
 
 ---
 
 ## ✅ Result
-- `magnus`: full access to Time Machine backups and general file sharing
 - Pi is discoverable via Bonjour (Avahi)
 
 ---
@@ -120,4 +117,3 @@ To enable Time Machine:
 
 ---
 
-Happy hacking! 🐧🎾
