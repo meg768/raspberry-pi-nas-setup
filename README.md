@@ -27,12 +27,10 @@ sudo systemctl start avahi-daemon
 ## 🗂️ Step 2: Create Shared Folders
 ```bash
 sudo mkdir -p /mnt/samsung/timemachine
-sudo mkdir -p /mnt/samsung/shared
+sudo mkdir -p /mnt/samsung/NAS
 
-sudo chown -R pi:pi /mnt/samsung/timemachine
-sudo chown -R pi:pi /mnt/samsung/shared
 sudo chmod -R 777 /mnt/samsung/timemachine
-sudo chmod -R 777 /mnt/samsung/shared
+sudo chmod -R 777 /mnt/samsung/NAS
 ```
 
 ---
@@ -44,8 +42,12 @@ sudo nano /etc/samba/smb.conf
 ```
 Append this to the end:
 ```ini
-[samsung]
-   path = /mnt/samsung
+
+[nobody]
+   browseable = no
+
+[NAS]
+   path = /mnt/samsung/NAS
    browseable = yes
    writable = yes
    guest ok = yes
@@ -53,14 +55,6 @@ Append this to the end:
    directory mask = 0777
    public = yes
 
-[shared]
-   path = /mnt/samsung/shared
-   browseable = yes
-   writable = yes
-   guest ok = yes
-   create mask = 0777
-   directory mask = 0777
-   public = yes
 
 [timemachine]
    path = /mnt/samsung/timemachine
@@ -72,6 +66,7 @@ Append this to the end:
    public = yes
    vfs objects = fruit
    fruit:time machine = yes
+
 
 ```
 Save and close.
@@ -87,7 +82,7 @@ sudo systemctl restart smbd
 
 ## 🖥️ Step 5: Connect from macOS
 - Open Finder → Go → Connect to Server
-- Enter: `smb://pi-nas.local/shared` or `smb://pi-nas.local/timemachine`
+- Enter: `smb://pi-nas.local/NAS` or `smb://pi-nas.local/timemachine`
 - Login as guest
 
 To enable Time Machine:
